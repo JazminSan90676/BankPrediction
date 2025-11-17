@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard - Banking Marketing</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
+      label { font-weight: 600; margin-top: 8px; display:block; }
+      input, select { padding:6px; width: 300px; margin-bottom: 8px; }
+      button { padding:10px 14px; font-size:16px; cursor:pointer; }
+      #result { white-space: pre-wrap; margin-top:12px; border:1px dashed #ccc; padding:8px; border-radius:6px; }
+    </style>
+  </head>
+  <body>
+    <h1>Banking Marketing — Dashboard</h1>
+
+    <div class="card">
+      <h3>Métricas principales</h3>
+      <pre id="metrics">Cargando métricas...</pre>
+    </div>
+
+    <div id="chart"></div>
+
+    <hr>
+    <h2>Realizar Predicción</h2>
+    <form id="predictForm">
+      <div id="formFields"></div>
+      <button type="submit">Predecir</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+      // Campos del dataset (sin la columna objetivo 'deposit')
+      const fields = ['age','job','marital','education','default','balance','housing','loan','contact','day','month','duration','campaign','pdays','previous','poutcome'];
+
+      // Opciones recomendadas para campos categóricos (puedes extender/ajustar)
+      const options = {
+        job: ['admin.', 'unknown', 'unemployed','management','housemaid','entrepreneur','student','blue-collar','self-employed','retired','technician','services'],
+        marital: ['married','divorced','single','unknown'],
+        education: ['secondary','tertiary','primary','unknown'],
+        default: ['no','yes','unknown'],
+        housing: ['no','yes'],
+        loan: ['no','yes'],
+        contact: ['unknown','telephone','cellular'],
+        month: ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],
+        poutcome: ['unknown','other','failure','success']
+      };
+
+      const formDiv = document.getElementById('formFields');
+      fields.forEach(f => {
+        const label = document.createElement('label');
+        label.textContent = f;
+        formDiv.appendChild(label);
+
+        if (options[f]) {
+          const sel = document.createElement('select');
+          sel.name = f;
+          sel.required = true;
+          options[f].forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            sel.appendChild(o);
+          });
+          formDiv.appendChild(sel);
+        } else {
+          const input = document.createElement('input');
+          input.name = f;
+          input.required = true;
+          // numeric hints
+          if (['age','balance','day','duration','campaign','pdays','previous'].includes(f)) {
+            input.type = 'number';
+            input.step = '1';
+          } else {
+            input.type = 'text';
+          }
+          formDiv.appendChild(input);
+        }
+      });
+
+      // Fetch metrics to render dashboard and keep metrics variable
+      fetch('/metrics').then(r => r.json()).then(m => {
+        document.getElementById('metrics').textContent = JSON.stringify(m, null, 2);
+        // chart
+        const names = [], values = [];
+        if (m.accuracy !== undefined) { names.push('Accuracy'); values.push(m.accuracy); }
+        if (m.precision !== undefined) { names.push('Precision'); values.push(m.precision); }
+        if (m.recall !== undefined) { names.push('Recall'); values.push(m.recall); }
+        if (m.f1 !== undefined) { names.push('F1'); values.push(m.f1); }
+        if (values.length>0) {
+          Plotly.newPlot('chart', [{ x: names, y: values, type: 'bar'}], {margin:{t:20}});
+        }
+      }).catch(err => {
+        document.getElementById('metrics').textContent = 'No se pudieron cargar métricas: ' + err;
+      });
+
+      // submit
+      document.getElementById('predictForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {};
+        fields.forEach(f => {
+          const el = document.getElementsByName(f)[0];
+          data[f] = el.value;
+        });
+
+        const res = await fetch('/predict', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ input: data })
+        });
+
+        const json = await res.json();
+        document.getElementById('result').textContent = JSON.stringify(json, null, 2);
+      });
+    </script>
+  </body>
+</html>
