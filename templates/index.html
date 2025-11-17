@@ -1,59 +1,152 @@
 <!doctype html>
-<html>
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard - Banking Marketing</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-      body { font-family: Arial, sans-serif; margin: 20px; }
-      .card { border: 1px solid #ddd; padding: 12px; border-radius: 8px; margin-bottom: 12px; }
-      label { font-weight: 600; margin-top: 8px; display:block; }
-      input, select { padding:6px; width: 300px; margin-bottom: 8px; }
-      button { padding:10px 14px; font-size:16px; cursor:pointer; }
-      #result { white-space: pre-wrap; margin-top:12px; border:1px dashed #ccc; padding:8px; border-radius:6px; }
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #f5f6fa;
+        color: #333;
+      }
+
+      header {
+        padding: 20px;
+        background: #2c3e50;
+        color: #fff;
+        text-align: center;
+      }
+
+      h1 { margin: 0; font-size: 28px; }
+
+      .container {
+        max-width: 1100px;
+        margin: auto;
+        padding: 20px;
+      }
+
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+
+      label {
+        font-size: 15px;
+        font-weight: 600;
+        margin-top: 10px;
+        display: block;
+      }
+
+      input, select {
+        padding: 10px;
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 14px;
+      }
+
+      button {
+        padding: 12px 18px;
+        background: #3498db;
+        border: none;
+        color: white;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      button:hover {
+        background: #2980b9;
+      }
+
+      #result {
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        white-space: pre-wrap;
+      }
+
+      #chart {
+        margin-top: 20px;
+      }
     </style>
   </head>
   <body>
-    <h1>Banking Marketing — Dashboard</h1>
+    <header>
+      <h1>Dashboard de Marketing Bancario</h1>
+    </header>
 
-    <div class="card">
-      <h3>Métricas principales</h3>
-      <pre id="metrics">Cargando métricas...</pre>
+    <div class="container">
+
+      <div class="card">
+        <h3>Métricas del Modelo</h3>
+        <pre id="metrics">Cargando métricas...</pre>
+      </div>
+
+      <div id="chart" class="card"></div>
+
+      <div class="card">
+        <h2>Realizar Predicción</h2>
+        <form id="predictForm">
+          <div id="formFields"></div>
+          <button type="submit">Predecir</button>
+        </form>
+      </div>
+
+      <div id="result"></div>
+
     </div>
 
-    <div id="chart"></div>
-
-    <hr>
-    <h2>Realizar Predicción</h2>
-    <form id="predictForm">
-      <div id="formFields"></div>
-      <button type="submit">Predecir</button>
-    </form>
-
-    <div id="result"></div>
-
     <script>
-      // Campos del dataset (sin la columna objetivo 'deposit')
-      const fields = ['age','job','marital','education','default','balance','housing','loan','contact','day','month','duration','campaign','pdays','previous','poutcome'];
+      const labels_es = {
+        age: 'Edad',
+        job: 'Trabajo',
+        marital: 'Estado civil',
+        education: 'Nivel educativo',
+        default: 'Crédito en mora',
+        balance: 'Balance en cuenta',
+        housing: 'Crédito hipotecario',
+        loan: 'Crédito personal',
+        contact: 'Tipo de contacto',
+        day: 'Día del mes',
+        month: 'Mes',
+        duration: 'Duración de la llamada (segundos)',
+        campaign: 'Número de contactos en esta campaña',
+        pdays: 'Días desde último contacto',
+        previous: 'Número de contactos previos',
+        poutcome: 'Resultado de campaña anterior'
+      };
 
-      // Opciones recomendadas para campos categóricos (puedes extender/ajustar)
+      const fields = Object.keys(labels_es);
+
       const options = {
         job: ['admin.', 'unknown', 'unemployed','management','housemaid','entrepreneur','student','blue-collar','self-employed','retired','technician','services'],
-        marital: ['married','divorced','single','unknown'],
-        education: ['secondary','tertiary','primary','unknown'],
-        default: ['no','yes','unknown'],
-        housing: ['no','yes'],
-        loan: ['no','yes'],
-        contact: ['unknown','telephone','cellular'],
-        month: ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'],
-        poutcome: ['unknown','other','failure','success']
+        marital: ['casado','divorciado','soltero','desconocido'],
+        education: ['secundaria','universitaria','primaria','desconocido'],
+        default: ['no','si','desconocido'],
+        housing: ['no','si'],
+        loan: ['no','si'],
+        contact: ['desconocido','teléfono','celular'],
+        month: ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'],
+        poutcome: ['desconocido','otro','falló','éxito']
       };
 
       const formDiv = document.getElementById('formFields');
       fields.forEach(f => {
         const label = document.createElement('label');
-        label.textContent = f;
+        label.textContent = labels_es[f];
         formDiv.appendChild(label);
 
         if (options[f]) {
@@ -71,7 +164,6 @@
           const input = document.createElement('input');
           input.name = f;
           input.required = true;
-          // numeric hints
           if (['age','balance','day','duration','campaign','pdays','previous'].includes(f)) {
             input.type = 'number';
             input.step = '1';
@@ -82,15 +174,15 @@
         }
       });
 
-      // Fetch metrics to render dashboard and keep metrics variable
       fetch('/metrics').then(r => r.json()).then(m => {
         document.getElementById('metrics').textContent = JSON.stringify(m, null, 2);
-        // chart
+
         const names = [], values = [];
-        if (m.accuracy !== undefined) { names.push('Accuracy'); values.push(m.accuracy); }
-        if (m.precision !== undefined) { names.push('Precision'); values.push(m.precision); }
+        if (m.accuracy !== undefined) { names.push('Exactitud'); values.push(m.accuracy); }
+        if (m.precision !== undefined) { names.push('Precisión'); values.push(m.precision); }
         if (m.recall !== undefined) { names.push('Recall'); values.push(m.recall); }
-        if (m.f1 !== undefined) { names.push('F1'); values.push(m.f1); }
+        if (m.f1 !== undefined) { names.push('F1 Score'); values.push(m.f1); }
+
         if (values.length>0) {
           Plotly.newPlot('chart', [{ x: names, y: values, type: 'bar'}], {margin:{t:20}});
         }
@@ -98,7 +190,6 @@
         document.getElementById('metrics').textContent = 'No se pudieron cargar métricas: ' + err;
       });
 
-      // submit
       document.getElementById('predictForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const data = {};
