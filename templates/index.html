@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Dashboard - Banking Marketing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
       body {
@@ -78,30 +79,55 @@
         white-space: pre-wrap;
       }
 
-      #chart {
+      /* Chart container fix */
+      #chartContainer {
         margin-top: 20px;
+      }
+
+      #chart {
+        width: 100% !important;
+        height: 420px !important;
+      }
+
+      @media (max-width: 768px) {
+        #chart {
+          height: 300px !important;
+        }
       }
     </style>
   </head>
   <body>
-    <header>
-      <h1>Dashboard de Marketing Bancario</h1>
-    </header>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+      <div class="container">
+        <a class="navbar-brand" href="/">Banking Marketing</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item"><a class="nav-link" href="/">Inicio</a></li>
+            <li class="nav-item"><a class="nav-link" href="/history">Historial</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
 
     <div class="container">
 
-      <div class="card">
-        <h3>Métricas del Modelo</h3>
+      <div class="card mb-3 p-3">
+        <h5 class="mb-2">Métricas del Modelo</h5>
         <pre id="metrics">Cargando métricas...</pre>
       </div>
 
-      <div id="chart" class="card"></div>
+      <!-- FIX: Contenedor adecuado para Plotly -->
+      <div class="card mb-3 p-3" id="chartContainer">
+        <div id="chart"></div>
+      </div>
 
-      <div class="card">
-        <h2>Realizar Predicción</h2>
+      <div class="card mb-3 p-3">
+        <h5>Realizar Predicción</h5>
         <form id="predictForm">
-          <div id="formFields"></div>
-          <button type="submit">Predecir</button>
+          <div id="formFields" class="row g-2"></div>
+          <div class="mt-3">
+            <button class="btn btn-primary" type="submit">Predecir</button>
+          </div>
         </form>
       </div>
 
@@ -184,7 +210,14 @@
         if (m.f1 !== undefined) { names.push('F1 Score'); values.push(m.f1); }
 
         if (values.length>0) {
-          Plotly.newPlot('chart', [{ x: names, y: values, type: 'bar'}], {margin:{t:20}});
+          const layout = {
+            title: 'Métricas del Modelo',
+            margin: { t:40, r:20, l:50, b:40 },
+            xaxis: { tickangle: -45 },
+            autosize: true
+          };
+          const config = { responsive: true };
+          Plotly.newPlot('chart', [{ x: names, y: values, type: 'bar', marker: {color: '#3498db'}}], layout, config);
         }
       }).catch(err => {
         document.getElementById('metrics').textContent = 'No se pudieron cargar métricas: ' + err;
